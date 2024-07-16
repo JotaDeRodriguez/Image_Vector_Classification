@@ -14,6 +14,5 @@ def yolo_classify_image(image_path, model, confidence_threshold):
         return predicted_category
 
     else:
-        print(f"{image_path} prediction is under the confidence threshold")
 
         return "uncategorized"

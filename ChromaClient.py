@@ -14,6 +14,8 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import numpy as np
 import io
+import plotly.express as px
+
 
 from Yolo_classify_image import yolo_classify_image
 from ultralytics import YOLO
@@ -92,7 +94,7 @@ class ImageEmbeddingPipeline:
 
         result = yolo_classify_image(image_path=image_path,
                                      model=model,
-                                     confidence_threshold=0.85
+                                     confidence_threshold=0.75
                                      )
 
         return result
@@ -106,7 +108,7 @@ class ImageEmbeddingPipeline:
             "image_path": image_path,
             "category": category,
             "image_hash": image_hash,
-            "description": None
+            "description": ""
         }
         self.collection.add(
             embeddings=[embedding.tolist()],
@@ -172,12 +174,39 @@ class ImageEmbeddingPipeline:
 
         return buf
 
+    def plot_embeddings_2d_interactive(self, perplexity):
+        embeddings, metadatas = self.get_all_embeddings()
+
+        # Extract categories, filenames, and image URLs from metadatas
+        categories = [meta['category'] for meta in metadatas]
+        filenames = [meta['image_path'] for meta in metadatas]
+        # image_urls = [meta['image_url'] for meta in metadatas]  # Ensure this key exists
+
+        # Perform t-SNE
+        tsne = TSNE(n_components=2, random_state=42, perplexity=perplexity)
+        embeddings_2d = tsne.fit_transform(embeddings)
+
+        # Create an interactive plot
+        fig = px.scatter(x=embeddings_2d[:, 0], y=embeddings_2d[:, 1], color=categories,
+                         # hover_data=[filenames, image_urls], title="2D Visualization of Image Embeddings by Category")
+                         hover_data=[filenames], title="2D Visualization of Image Embeddings by Category")
+
+        # Update hover template to include images
+        fig.update_traces(marker=dict(size=5),
+                          selector=dict(mode='markers'),
+                          # hovertemplate="<b>%{customdata[0]}</b><br><img src='%{customdata[1]}' width='100' height='100'><extra></extra>")
+                          hovertemplate = "<b>%{customdata[0]}</b><br><extra></extra>")
+
+
+        fig.show()
+        return embeddings_2d
+
 
 async def main():
     config = {
         "chroma_path": r"Y:\ChromaDB",
-        "collection": "image_embeddings_test",
-        "image_folder": r"Y:\Image_Pool\ChromaDB",
+        "collection": "image_embeddings_test2",
+        "image_folder": r"Y:\Image_Pool\300_random_images",
         "max_workers": 4,
         "clip_model": "openai/clip-vit-base-patch32"
     }

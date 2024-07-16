@@ -13,7 +13,7 @@ client = PersistentClient(path=db_path, settings=Settings(allow_reset=False))
 collection = client.get_or_create_collection("image_embeddings_test")
 
 
-def update_metadata_with_category(metadata):
+def update_metadata_category(metadata):
     image_path = metadata.get("image_path")
     result = yolo_classify_image(image_path=image_path, model=model, confidence_threshold=0.85)
     metadata["category"] = result
