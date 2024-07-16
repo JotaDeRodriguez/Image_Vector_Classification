@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Categorization App</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <style>
+        .image-container { display: inline-block; margin: 10px; }
+        .image-container img { max-width: 200px; max-height: 200px; }
+    </style>
+</head>
+<body>
+    <h1>Image Categorization App</h1>
+
+    <form id="searchForm">
+        <input type="file" id="queryImage" accept="image/*" required>
+        <button type="submit">Search Similar Images</button>
+    </form>
+
+    <div id="results"></div>
+
+    <form id="categorizeForm">
+        <select id="categorySelect">
+            {% for category in categories %}
+            <option value="{{ category }}">{{ category }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Categorize Selected Images</button>
+    </form>
+
+    <script>
+        $(document).ready(function() {
+            $('#searchForm').submit(function(e) {
+                e.preventDefault();
+                var formData = new FormData();
+                formData.append('query_image', $('#queryImage')[0].files[0]);
+
+                $.ajax({
+                    url: '/search',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(data) {
+                        var resultsHtml = '';
+                        data.forEach(function(image) {
+                            resultsHtml += '<div class="image-container">';
+                            resultsHtml += '<img src="' + image.path + '" alt="' + image.id + '">';
+                            resultsHtml += '<br><input type="checkbox" name="selected_images" value="' + image.id + '">';
+                            resultsHtml += '</div>';
+                        });
+                        $('#results').html(resultsHtml);
+                    }
+                });
+            });
+
+            $('#categorizeForm').submit(function(e) {
+                e.preventDefault();
+                var selectedImages = $('input[name="selected_images"]:checked').map(function() {
+                    return this.value;
+                }).get();
+                var category = $('#categorySelect').val();
+
+                $.ajax({
+                    url: '/categorize',
+                    type: 'POST',
+                    data: JSON.stringify({images: selectedImages, category: category}),
+                    contentType: 'application/json',
+                    success: function(data) {
+                        alert(data.message);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
