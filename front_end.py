@@ -7,7 +7,7 @@ from ChromaClient import ImageEmbeddingPipeline
 # Initialize the ImageEmbeddingPipeline
 config = {
     "chroma_path": r"Y:\ChromaDB",
-    "collection_name": "image_embeddings_test",
+    "collection": "image_embeddings_test",
     "image_folder": r"Y:\Image_Pool\ChromaDB",
     "max_workers": 4,
     "clip_model": "openai/clip-vit-base-patch32"

@@ -15,6 +15,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import io
 
+from Yolo_classify_image import yolo_classify_image
+from ultralytics import YOLO
+
 class ImageEmbeddingPipeline:
     def __init__(self, config):
         self.config = config
@@ -28,7 +31,7 @@ class ImageEmbeddingPipeline:
 
     def setup_chroma(self):
         self.client = chromadb.PersistentClient(path=self.config['chroma_path'])
-        self.collection = self.client.get_or_create_collection(self.config['collection_name'])
+        self.collection = self.client.get_or_create_collection(self.config['collection'])
 
     def setup_clip_model(self):
         self.model = CLIPModel.from_pretrained(self.config['clip_model'])
@@ -84,18 +87,26 @@ class ImageEmbeddingPipeline:
         return None
 
     def get_category(self, image_path):
-        # TODO: Implement category detection using CLIP's text capabilities
-        return "uncategorized"
+
+        model = YOLO(r"C:\Users\juandavid.rodriguez\Downloads\last.pt")
+
+        result = yolo_classify_image(image_path=image_path,
+                                     model=model,
+                                     confidence_threshold=0.85
+                                     )
+
+        return result
 
     def get_text_description(self, image_path):
-        # TODO: Fill out text description
+
         return ""
 
     def add_image_to_collection(self, image_path, image_hash, embedding, category):
         metadata = {
             "image_path": image_path,
             "category": category,
-            "image_hash": image_hash
+            "image_hash": image_hash,
+            "description": None
         }
         self.collection.add(
             embeddings=[embedding.tolist()],
@@ -165,7 +176,7 @@ class ImageEmbeddingPipeline:
 async def main():
     config = {
         "chroma_path": r"Y:\ChromaDB",
-        "collection_name": "image_embeddings_test",
+        "collection": "image_embeddings_test",
         "image_folder": r"Y:\Image_Pool\ChromaDB",
         "max_workers": 4,
         "clip_model": "openai/clip-vit-base-patch32"
@@ -180,18 +191,6 @@ async def main():
 
     # Print collection info after processing
     pipeline.print_collection_info()
-
-    # Example query
-    query_image_path = r"Y:\Imagenes_Clasificadas_Overhauled\Categorias Final\torre\2022-03-23 15.32.53.jpg"
-    results = pipeline.query_similar_images(query_image_path, n_results=5)
-    if results:
-        print("Query results:")
-        for i, (id, distance, metadata) in enumerate(
-                zip(results['ids'][0], results['distances'][0], results['metadatas'][0])):
-            print(f"{i + 1}. ID: {id}, Distance: {distance}, Metadata: {metadata}")
-    else:
-        print("No results found or error occurred during query.")
-
 
 if __name__ == "__main__":
     asyncio.run(main())
