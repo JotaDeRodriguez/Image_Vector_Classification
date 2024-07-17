@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Annotation Tool</title>
+    <style>
+        .category { margin-bottom: 20px; }
+        .image-container { display: flex; flex-wrap: wrap; }
+        .image-item { margin: 5px; text-align: center; }
+        img { max-width: 200px; max-height: 200px; }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Image Annotation Tool</h1>
+
+    {% for category, images in categories.items() %}
+        <div class="category">
+            <h2>{{ category }} ({{ images|length }} images)</h2>
+            <div class="image-container">
+                {% for image_path in images %}
+                    <div class="image-item">
+                        <img src="{{ url_for('serve_image', image_path=image_path) }}" alt="{{ image_path }}">
+                        <p>{{ image_path.split('/')[-1] }}</p>
+                        <button onclick="findSimilarImages('{{ image_path }}')">Find Similar</button>
+                        <form action="{{ url_for('tag_similar_images') }}" method="post">
+                            <input type="hidden" name="image_path" value="{{ image_path }}">
+                            <input type="text" name="new_tag" placeholder="New tag">
+                            <input type="number" name="n_results" value="5" min="1" max="20">
+                            <button type="submit">Tag Similar</button>
+                        </form>
+                        <form action="{{ url_for('update_tags') }}" method="post">
+                            <input type="hidden" name="image_hash" value="{{ image_hashes[image_path] }}">
+                            <input type="text" name="new_tags" placeholder="Update tags (comma-separated)">
+                            <button type="submit">Update Tags</button>
+                        </form>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+
+    <div id="similarImages"></div>
+
+    <script>
+    function findSimilarImages(imagePath) {
+        $.post('/similar_images', {image_path: imagePath, n_results: 5}, function(data) {
+            let html = '<h2>Similar Images</h2>';
+            data.ids[0].forEach((id, index) => {
+                const metadata = data.metadatas[0][index];
+                html += `<div>
+                    <img src="${metadata.image_path}" alt="${id}" style="max-width: 100px; max-height: 100px;">
+                    <p>Tags: ${metadata.tags ? metadata.tags.join(', ') : 'No tags'}</p>
+                </div>`;
+            });
+            $('#similarImages').html(html);
+        });
+    }
+    </script>
+</body>
+</html>

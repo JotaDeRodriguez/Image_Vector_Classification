@@ -108,7 +108,7 @@ class ImageEmbeddingPipeline:
             "image_path": image_path,
             "category": category,
             "image_hash": image_hash,
-            "description": ""
+            "description": "",
         }
         self.collection.add(
             embeddings=[embedding.tolist()],
@@ -122,7 +122,8 @@ class ImageEmbeddingPipeline:
         if query_embedding is not None:
             results = self.collection.query(
                 query_embeddings=[query_embedding.tolist()],
-                n_results=n_results
+                n_results=n_results,
+                include=['metadatas']
             )
             self.logger.info(f"Query results: {results}")
             return results
@@ -177,10 +178,9 @@ class ImageEmbeddingPipeline:
     def plot_embeddings_2d_interactive(self, perplexity):
         embeddings, metadatas = self.get_all_embeddings()
 
-        # Extract categories, filenames, and image URLs from metadatas
+        # Extract categories and filenames from metadatas
         categories = [meta['category'] for meta in metadatas]
-        filenames = [meta['image_path'] for meta in metadatas]
-        # image_urls = [meta['image_url'] for meta in metadatas]  # Ensure this key exists
+        filenames = [meta['image_path'] for meta in metadatas]  # Adjust this if 'image_path' is not the correct key
 
         # Perform t-SNE
         tsne = TSNE(n_components=2, random_state=42, perplexity=perplexity)
@@ -188,38 +188,28 @@ class ImageEmbeddingPipeline:
 
         # Create an interactive plot
         fig = px.scatter(x=embeddings_2d[:, 0], y=embeddings_2d[:, 1], color=categories,
-                         # hover_data=[filenames, image_urls], title="2D Visualization of Image Embeddings by Category")
-                         hover_data=[filenames], title="2D Visualization of Image Embeddings by Category")
+                         hover_data={'filename': filenames, 'category': categories},
+                         title="2D Visualization of Image Embeddings by Category")
 
-        # Update hover template to include images
+        # Update hover template to include category and filename
         fig.update_traces(marker=dict(size=5),
                           selector=dict(mode='markers'),
-                          # hovertemplate="<b>%{customdata[0]}</b><br><img src='%{customdata[1]}' width='100' height='100'><extra></extra>")
-                          hovertemplate = "<b>%{customdata[0]}</b><br><extra></extra>")
-
+                          hovertemplate="<b>Filename:</b> %{customdata[0]}<br><b>Category:</b> %{customdata[1]}<extra></extra>")
 
         fig.show()
         return embeddings_2d
 
+    def get_all_categories(self):
+        _, metadatas = self.get_all_embeddings()
+        categories = set(metadata['category'] for metadata in metadatas)
+        return list(categories)
 
-async def main():
-    config = {
-        "chroma_path": r"Y:\ChromaDB",
-        "collection": "image_embeddings_test2",
-        "image_folder": r"Y:\Image_Pool\300_random_images",
-        "max_workers": 4,
-        "clip_model": "openai/clip-vit-base-patch32"
-    }
+    def get_images_by_category(self, category):
+        _, metadatas = self.get_all_embeddings()
+        return [metadata['image_path'] for metadata in metadatas if metadata['category'] == category]
 
-    pipeline = ImageEmbeddingPipeline(config)
-
-    # Print initial collection info
-    pipeline.print_collection_info()
-
-    await pipeline.process_images()
-
-    # Print collection info after processing
-    pipeline.print_collection_info()
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    def update_tags(self, image_hash, new_tags):
+        metadata = self.collection.get(ids=[image_hash])['metadatas'][0]
+        metadata['tags'] = new_tags
+        self.collection.update(ids=[image_hash], metadatas=[metadata])
+        self.logger.info(f"Updated tags for {image_hash}")

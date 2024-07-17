@@ -2,7 +2,7 @@ import streamlit as st
 import os
 from PIL import Image
 import io
-from ChromaClient import ImageEmbeddingPipeline
+from ImageEmbeddingPipeline import ImageEmbeddingPipeline
 
 # Initialize the ImageEmbeddingPipeline
 config = {
