@@ -5,7 +5,7 @@ async def main():
     config = {
         "chroma_path": r"Y:\ChromaDB",
         "collection": "image_embeddings",
-        "image_folder": r"Y:\Image_Pool\150_random_images",
+        "image_folder": r"Y:\Image_Pool",
         "max_workers": 4,
         "clip_model": "openai/clip-vit-base-patch32"
     }

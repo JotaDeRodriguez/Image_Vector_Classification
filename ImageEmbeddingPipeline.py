@@ -58,13 +58,15 @@ class ImageEmbeddingPipeline:
             if not existing_item['ids']:
                 embedding = self.get_image_embedding(image_path)
                 if embedding is not None:
+                    # category = os.path.basename(os.path.dirname(image_path))
                     category = self.get_category(image_path)
                     self.add_image_to_collection(image_path, image_hash, embedding, category)
-                    self.logger.info(f"Added {image_path} to collection")
+                    self.logger.info(f"Added {image_path} to collection. Category: {category}")
                 else:
                     self.logger.warning(f"Failed to get embedding for {image_path}")
             else:
-                self.logger.info(f"Image {image_path} already in database")
+                pass
+                # self.logger.info(f"Image {image_path} already in database")
         except Exception as e:
             self.logger.error(f"Error processing {image_path}: {str(e)}")
 
@@ -175,7 +177,7 @@ class ImageEmbeddingPipeline:
 
         return buf
 
-    def plot_embeddings_2d_interactive(self, perplexity):
+    def plot_embeddings_2d_interactive(self):
         embeddings, metadatas = self.get_all_embeddings()
 
         # Extract categories and filenames from metadatas
@@ -183,7 +185,7 @@ class ImageEmbeddingPipeline:
         filenames = [meta['image_path'] for meta in metadatas]  # Adjust this if 'image_path' is not the correct key
 
         # Perform t-SNE
-        tsne = TSNE(n_components=2, random_state=42, perplexity=perplexity)
+        tsne = TSNE(n_components=2, random_state=42, perplexity=min(30, len(embeddings-1)))
         embeddings_2d = tsne.fit_transform(embeddings)
 
         # Create an interactive plot
